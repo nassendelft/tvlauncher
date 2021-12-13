@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+  package="com.example.tvlauncher">
+
+  <uses-permission android:name="android.permission.INTERNET" />
+
+  <queries>
+    <intent>
+      <action android:name="android.intent.action.MAIN" />
+      <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+    </intent>
+  </queries>
+
+  <application android:theme="@android:style/Theme.Material.NoActionBar">
+    <activity
+      android:name=".MainActivity"
+      android:clearTaskOnLaunch="true"
+      android:exported="true"
+      android:launchMode="singleTask"
+      android:stateNotNeeded="true">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.HOME" />
+      </intent-filter>
+    </activity>
+  </application>
+
+</manifest>

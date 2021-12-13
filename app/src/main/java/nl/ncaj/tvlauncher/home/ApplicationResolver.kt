@@ -1,15 +1,18 @@
-package com.example.tvlauncher
+package nl.ncaj.tvlauncher.home
 
-import android.content.Context
 import android.content.Intent
-import android.content.Intent.*
+import android.content.Intent.ACTION_MAIN
+import android.content.Intent.CATEGORY_LEANBACK_LAUNCHER
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
-import androidx.activity.result.contract.ActivityResultContract
+import dagger.hilt.android.scopes.ViewModelScoped
+import javax.inject.Inject
 
-class ApplicationResolver(context: Context) {
-  private val packageManager = context.applicationContext.packageManager
+@ViewModelScoped
+class ApplicationResolver @Inject constructor(
+  private val packageManager: PackageManager
+) {
 
   fun getLeanbackLaunchApplications(
     withBannersOnly: Boolean = true
@@ -36,16 +39,5 @@ class ApplicationResolver(context: Context) {
     fun loadIcon(): Drawable = activityInfo.loadIcon(packageManager)
     fun loadBanner(): Drawable? = activityInfo.loadBanner(packageManager)
     fun loadLogo(): Drawable? = activityInfo.loadLogo(packageManager)
-
-    fun getLaunchContract(preferLeanback: Boolean = true): ActivityResultContract<Unit, Int> {
-      val intent = if (preferLeanback) {
-        packageManager.getLeanbackLaunchIntentForPackage(packageName)
-          ?: packageManager.getLaunchIntentForPackage(packageName)
-      } else {
-        packageManager.getLaunchIntentForPackage(packageName)
-      } ?: error("Could not find intent to start app")
-
-      return ResultCodeLaunchContract(intent)
-    }
   }
 }

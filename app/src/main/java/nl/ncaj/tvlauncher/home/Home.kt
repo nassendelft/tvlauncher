@@ -1,9 +1,8 @@
-package com.example.tvlauncher
+package nl.ncaj.tvlauncher.home
 
-import android.content.Intent
 import android.graphics.drawable.Drawable
-import androidx.activity.result.contract.ActivityResultContract
-import androidx.activity.result.launch
+import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -11,8 +10,12 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material.Button
+import androidx.compose.material.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -29,48 +32,48 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
-import com.example.tvlauncher.ResultCodeLaunchContract.Companion.rememberActivityLauncher
+import nl.ncaj.tvlauncher.AppLauncherContract
+import nl.ncaj.tvlauncher.R
 
-internal data class LeanbackApp(
+data class LeanbackApp(
   val name: CharSequence,
   val banner: Painter,
-  val launchContract: ActivityResultContract<Unit, Int>
+  val packageName: String
 )
 
-internal val ApplicationResolver.ResolvedApplication.asLeanbackApp
+val ApplicationResolver.ResolvedApplication.asLeanbackApp
   get() = LeanbackApp(
     name = loadLaunchLabel(),
     banner = (loadBanner() ?: error("Banner required for leanback app")).asPainter,
-    launchContract = getLaunchContract()
+    packageName = packageName
   )
 
 private val Drawable.asPainter get() = BitmapPainter(this.toBitmap().asImageBitmap())
 
 @Composable
 private fun LeanbackAppItem(
-  app: LeanbackApp,
-  modifier: Modifier = Modifier
+    app: LeanbackApp,
+    modifier: Modifier = Modifier,
+    onClick: (LeanbackApp) -> Unit = {}
 ) {
-  val launcher = rememberActivityLauncher(app.launchContract)
   var focused by remember { mutableStateOf(false) }
   Box(
     modifier = modifier
       .onFocusChanged { focused = it.isFocused }
       .focusable()
+      .clickable { onClick(app) }
+      .onKeyEvent {
+        if (it.key == Key.Enter) {
+          onClick(app)
+          return@onKeyEvent true
+        }
+        return@onKeyEvent false
+      }
   ) {
     Image(
       painter = app.banner,
       contentDescription = app.name.toString(),
-      modifier = Modifier
-        .fillMaxSize()
-        .clickable { launcher.launch() }
-        .onKeyEvent {
-          if (it.key == Key.Enter) {
-            launcher.launch()
-            return@onKeyEvent true
-          }
-          return@onKeyEvent false
-        }
+      modifier = Modifier.fillMaxSize()
     )
     if (focused) {
       Canvas(modifier = Modifier.fillMaxSize()) {
@@ -81,12 +84,13 @@ private fun LeanbackAppItem(
 }
 
 @Composable
-internal fun LeanbackAppGrid(
-  items: List<LeanbackApp>,
-  modifier: Modifier = Modifier,
-  columns: Int = 5,
-  spacing: Dp = 20.dp,
-  itemRatio: Float = 0.5625f,
+private fun LeanbackAppGrid(
+    items: List<LeanbackApp>,
+    modifier: Modifier = Modifier,
+    columns: Int = 5,
+    spacing: Dp = 20.dp,
+    itemRatio: Float = 0.5625f,
+    openApplication: (LeanbackApp) -> Unit = {}
 ) {
   // focusRequest is need to give initial focus
   // to first item on composition
@@ -112,12 +116,41 @@ internal fun LeanbackAppGrid(
               app = item,
               modifier = Modifier
                 .size(cellWidth, cellHeight)
-                .then(if (index == 0) Modifier.focusRequester(focusRequester) else Modifier)
+                .then(if (index == 0) Modifier.focusRequester(focusRequester) else Modifier),
+              onClick = openApplication
             )
           }
         }
       }
     }
+  }
+}
+
+@Composable
+fun Home(
+  viewModel: HomeViewModel
+) {
+  val launcher = rememberLauncherForActivityResult(InstallApkResultContract) {
+    Log.d("ApkInstall", "Launch install result code: $it")
+  }
+  val appLauncher = rememberLauncherForActivityResult(viewModel.launcherContract) {
+    // will not be called the update is installed because it will stop this app's process
+  }
+
+  val uri = viewModel.update?.fileUri
+
+  Column(horizontalAlignment = Alignment.End) {
+    Box(Modifier.padding(top = 20.dp, end = 20.dp)) {
+      Button(
+        modifier = Modifier.alpha(if (uri == null) 0.0f else 1.0f),
+        onClick = { if (uri != null) launcher.launch(uri) }) {
+        Text("Update to latest version")
+      }
+    }
+    LeanbackAppGrid(
+      items = viewModel.apps,
+      openApplication = { appLauncher.launch(AppLauncherContract.Input(it.packageName)) }
+    )
   }
 }
 
@@ -128,8 +161,7 @@ internal fun LeanbackAppGrid(
 )
 @Composable
 fun PreviewAppGrid() {
-  val contract = ResultCodeLaunchContract(Intent())
   val banner = painterResource(id = R.drawable.banner)
-  val apps = (1 until 13).map { LeanbackApp(it.toString(), banner, contract) }
+  val apps = (1 until 13).map { LeanbackApp(it.toString(), banner, "packageName") }
   LeanbackAppGrid(items = apps)
 }

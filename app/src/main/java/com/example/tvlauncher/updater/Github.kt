@@ -12,7 +12,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 @Serializable
-internal data class GithubRelease(
+data class GithubRelease(
   val assets: List<GithubAsset>,
   @SerialName("tag_name")
   val tagName: String,
@@ -22,16 +22,15 @@ internal data class GithubRelease(
 )
 
 @Serializable
-internal data class GithubAsset(
+data class GithubAsset(
   @SerialName("browser_download_url")
   val downloadUrl: String,
-  @SerialName("created_at")
   val size: Long,
   val name: String
 )
 
-internal object GithubDateSerializer : KSerializer<Date> {
-  private val formatter = SimpleDateFormat("yyyy-MM-ddTHH:mm:ssZ", Locale.US)
+object GithubDateSerializer : KSerializer<Date> {
+  private val formatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US)
   override val descriptor: SerialDescriptor =
     PrimitiveSerialDescriptor("Date", PrimitiveKind.STRING)
 

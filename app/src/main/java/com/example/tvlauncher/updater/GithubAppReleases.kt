@@ -6,10 +6,13 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import javax.inject.Inject
+import javax.inject.Singleton
 
-internal class AppVersions(
-  private val httpClient: OkHttpClient = OkHttpClient(),
-  private val json: Json = Json { ignoreUnknownKeys = true }
+@Singleton
+class GithubAppReleases @Inject constructor(
+  private val httpClient: OkHttpClient,
+  private val json: Json
 ) {
 
   /**
@@ -33,7 +36,7 @@ internal class AppVersions(
       json.decodeFromString<List<GithubRelease>>(it.string())
     } ?: emptyList()
     return@withContext githubReleases.firstOrNull()?.asRelease
-      ?: error("Could not find any release")
+      ?: error("Could not find an apk release file")
   }
 
   private val GithubRelease.asRelease

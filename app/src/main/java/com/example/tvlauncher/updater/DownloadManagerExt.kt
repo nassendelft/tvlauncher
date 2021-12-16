@@ -1,6 +1,7 @@
 package com.example.tvlauncher.updater
 
 import android.app.DownloadManager
+import android.database.Cursor
 
 /**
  * Convenience function for [DownloadManager.query].
@@ -9,7 +10,7 @@ import android.app.DownloadManager
  * @throws IllegalArgumentException if download data could not be read from [DownloadManager]
  * @throws IllegalStateException if download could not be found
  */
-internal fun DownloadManager.getStatus(id: Long): DownloadStatus =
+fun DownloadManager.getStatus(id: Long): DownloadStatus =
   getStatusOrNull(id) ?: error("Could not find the the download of id '${id}'")
 
 /**
@@ -18,30 +19,34 @@ internal fun DownloadManager.getStatus(id: Long): DownloadStatus =
  * @return [DownloadStatus] or null if no data could be found for given id
  * @throws IllegalArgumentException if data could not be read from [DownloadManager]
  */
-internal fun DownloadManager.getStatusOrNull(id: Long): DownloadStatus? {
+fun DownloadManager.getStatusOrNull(id: Long): DownloadStatus? {
   val cursor = query(DownloadManager.Query().setFilterById(id))
-
-  return if (cursor.moveToFirst()) {
-    val status = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
-    if (status == DownloadManager.STATUS_SUCCESSFUL) {
-      val uri = cursor.getString(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_URI))
-      DownloadStatus.Success(uri)
-    } else if (status == DownloadManager.STATUS_PENDING) {
-      DownloadStatus.Pending
-    } else if (status == DownloadManager.STATUS_RUNNING) {
-      DownloadStatus.Running
-    } else if (status == DownloadManager.STATUS_PAUSED) {
-      cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON)).asPauseStatus
-    } else {
-      val reasonCode = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON))
-      if (status == DownloadManager.STATUS_FAILED) {
-        DownloadStatus.Failure.Http(reasonCode)
-      } else {
-        reasonCode.asErrorStatus
-      }
-    }
-  } else null
+  if (!cursor.moveToFirst()) return null
+  return cursor.getDownloadStatus()
 }
+
+private fun Cursor.getDownloadStatus() =
+  when (this.getInt(this.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))) {
+    DownloadManager.STATUS_SUCCESSFUL -> {
+      val uri = this.getString(this.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_URI))
+      DownloadStatus.Success(uri)
+    }
+    DownloadManager.STATUS_PENDING -> {
+      DownloadStatus.Pending
+    }
+    DownloadManager.STATUS_RUNNING -> {
+      DownloadStatus.Running
+    }
+    DownloadManager.STATUS_PAUSED -> {
+      this.getInt(this.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON)).asPauseStatus
+    }
+    DownloadManager.STATUS_FAILED -> {
+      this.getInt(this.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON)).asErrorStatus
+    }
+    else -> {
+      DownloadStatus.Unknown
+    }
+  }
 
 private val Int.asPauseStatus
   get() = when (this) {
@@ -53,13 +58,14 @@ private val Int.asPauseStatus
 
 private val Int.asErrorStatus
   get() = when (this) {
-    DownloadManager.ERROR_CANNOT_RESUME -> DownloadStatus.Failure.Error.CannotResume
-    DownloadManager.ERROR_FILE_ERROR -> DownloadStatus.Failure.Error.File
-    DownloadManager.ERROR_HTTP_DATA_ERROR -> DownloadStatus.Failure.Error.HttpDataError
-    DownloadManager.ERROR_INSUFFICIENT_SPACE -> DownloadStatus.Failure.Error.InsufficientSpace
-    DownloadManager.ERROR_DEVICE_NOT_FOUND -> DownloadStatus.Failure.Error.DeviceNotFound
-    DownloadManager.ERROR_FILE_ALREADY_EXISTS -> DownloadStatus.Failure.Error.FileAlreadyExist
-    DownloadManager.ERROR_TOO_MANY_REDIRECTS -> DownloadStatus.Failure.Error.TooManyRedirects
-    DownloadManager.ERROR_UNHANDLED_HTTP_CODE -> DownloadStatus.Failure.Error.UnhandledHttpCode
-    else -> DownloadStatus.Failure.Error.Unknown
+    DownloadManager.ERROR_CANNOT_RESUME -> DownloadStatus.Failure.CannotResume
+    DownloadManager.ERROR_FILE_ERROR -> DownloadStatus.Failure.File
+    DownloadManager.ERROR_HTTP_DATA_ERROR -> DownloadStatus.Failure.HttpDataError
+    DownloadManager.ERROR_INSUFFICIENT_SPACE -> DownloadStatus.Failure.InsufficientSpace
+    DownloadManager.ERROR_DEVICE_NOT_FOUND -> DownloadStatus.Failure.DeviceNotFound
+    DownloadManager.ERROR_FILE_ALREADY_EXISTS -> DownloadStatus.Failure.FileAlreadyExist
+    DownloadManager.ERROR_TOO_MANY_REDIRECTS -> DownloadStatus.Failure.TooManyRedirects
+    DownloadManager.ERROR_UNHANDLED_HTTP_CODE -> DownloadStatus.Failure.UnhandledHttpCode
+    DownloadManager.ERROR_UNKNOWN -> DownloadStatus.Failure.Unknown
+    else -> DownloadStatus.Failure.Http(this)
   }

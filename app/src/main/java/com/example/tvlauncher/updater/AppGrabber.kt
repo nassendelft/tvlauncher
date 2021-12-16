@@ -1,58 +1,97 @@
 package com.example.tvlauncher.updater
 
-import android.app.Application
 import android.app.DownloadManager
 import android.app.DownloadManager.ACTION_DOWNLOAD_COMPLETE
+import android.app.DownloadManager.EXTRA_DOWNLOAD_ID
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
 import android.content.IntentFilter
-import androidx.core.content.getSystemService
+import android.os.Environment
+import android.os.Environment.DIRECTORY_DOWNLOADS
 import androidx.core.net.toUri
-import kotlinx.coroutines.Dispatchers.Main
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.withContext
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.channels.onFailure
+import kotlinx.coroutines.channels.onSuccess
+import kotlinx.coroutines.channels.trySendBlocking
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.flow
+import java.io.File
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * This class allows to download of an app release.
  * Call [downloadApp] to start the download.
- * The result can be observed by subscribing to [appDownloads].
- * These result events are dispatch using the [Main] dispatcher.
  *
- * @see AppVersions
+ * @see GithubAppReleases
  */
-internal class AppGrabber(private val context: Context) {
-
-  private val downloadManager = context.getSystemService<DownloadManager>()
-    ?: error("Could not get an instance of DownloadManager")
-
-  init {
-    check(context is Application) { "context passed should be the application context" }
-
-    // Register DownloadReceiver so that we can events when a download finishes
-    context.registerReceiver(
-      DownloadReceiver(::notifyDownloadComplete),
-      IntentFilter(ACTION_DOWNLOAD_COMPLETE)
-    )
-  }
-
-  private val _appDownloads = MutableSharedFlow<DownloadStatus>()
-  val appDownloads = _appDownloads.asSharedFlow()
-
-  private suspend fun notifyDownloadComplete(id: Long) = withContext(Main) {
-    val status = downloadManager.getStatus(id)
-    _appDownloads.emit(status)
-  }
+@Singleton
+class AppGrabber @Inject constructor(
+  @ApplicationContext private val context: Context,
+  private val downloadManager: DownloadManager
+) {
 
   /**
    * Starts download of given app release.
    *
-   * @return ID needed to interact with this download
+   * @return flow with a single emitted value for the status of the download when it's completed.
+   * This can fail to retrieve the status of the download. In this case the flow will
+   * emit an exception so make sure you catch with `.catch()`. Will immediately return
+   * [DownloadStatus.Success] if file already exist.
    */
-  fun downloadApp(release: Release): Long {
+  fun downloadApp(release: Release): Flow<DownloadStatus> {
+    val file = File(context.getExternalFilesDir(DIRECTORY_DOWNLOADS), release.file.name)
+
+    // if the file is already downloaded we just return a success status
+    if(file.exists() && file.length() == release.file.size) {
+      return flow { emit(DownloadStatus.Success(file.toUri().toString())) }
+    }
+
     val request = DownloadManager.Request(release.file.url.toUri())
       .setMimeType("application/vnd.android.package-archive")
       .setTitle(context.applicationInfo.loadLabel(context.packageManager))
       .setDescription("Downloading ${release.version}")
-    return downloadManager.enqueue(request)
+      .setDestinationInExternalFilesDir(context, DIRECTORY_DOWNLOADS, release.file.name)
+    return getStatus(downloadManager.enqueue(request))
+  }
+
+  private fun getStatus(downloadId: Long) = callbackFlow<DownloadStatus> {
+    val receiver = DownloadReceiver(downloadId) {
+      val status = downloadManager.getStatus(it)
+      trySendBlocking(status).onSuccess { channel.close() }
+    }
+    context.registerReceiver(receiver, IntentFilter(ACTION_DOWNLOAD_COMPLETE))
+    awaitClose { context.unregisterReceiver(receiver) }
+  }
+
+  /**
+   * Listens to [ACTION_DOWNLOAD_COMPLETE] actions received from [DownloadManager]
+   *
+   * Be aware: If the [DownloadManager] ever sends a broadcast but doesn't include the ID of the
+   * download in the intent the [onDownloadReceived] callback is never called. This should be very
+   * edge-case however, if this happens there's nothing we can do about it.
+   *
+   * @param downloadId the ID of the download to check the status of
+   * @param onDownloadReceived callback which gets called if the received broadcast has the same
+   * id as the one given in [downloadId]
+   */
+  private class DownloadReceiver(
+    private val downloadId: Long,
+    private val onDownloadReceived: (Long) -> Unit
+  ) : BroadcastReceiver() {
+
+    override fun onReceive(context: Context, intent: Intent) {
+      if (intent.action != ACTION_DOWNLOAD_COMPLETE) return
+
+      val id = intent.getLongExtra(EXTRA_DOWNLOAD_ID, 0)
+
+      // ignore if it's not the id we're looking for
+      if (id != downloadId) return
+
+      onDownloadReceived(id)
+    }
   }
 }

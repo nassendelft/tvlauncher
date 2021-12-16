@@ -1,8 +1,8 @@
 package com.example.tvlauncher.updater
 
-import java.util.*
+import java.util.Date
 
-internal data class Release(
+data class Release(
     val version: String,
     val date: Date,
     val file: File

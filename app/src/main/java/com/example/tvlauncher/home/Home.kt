@@ -134,7 +134,6 @@ private fun LeanbackAppGrid(
 fun Home(
   viewModel: HomeViewModel
 ) {
-  val context = LocalContext.current
   val launcher = rememberLauncherForActivityResult(InstallApkResultContract) {
     Log.d("ApkInstall", "Launch install result code: $it")
   }
@@ -143,22 +142,13 @@ fun Home(
     if (it == Activity.RESULT_OK) viewModel.notifyAppInstalled()
   }
 
-  val appUpdate = viewModel.update
-  val uri = appUpdate?.fileUri?.toFile()
+  val uri = viewModel.update?.fileUri
 
   Column(horizontalAlignment = Alignment.End) {
     Box(Modifier.padding(top = 20.dp, end = 20.dp)) {
       Button(
         modifier = Modifier.alpha(if (uri == null) 0.0f else 1.0f),
-        onClick = {
-          if (uri == null) return@Button
-          // TODO move fileprovider logic outside the UI layer
-          val launchUri = FileProvider.getUriForFile(
-            context,
-            context.packageName + ".apkprovider", uri
-          )
-          launcher.launch(launchUri)
-        }) {
+        onClick = { if (uri != null) launcher.launch(uri) }) {
         Text("Update to latest version")
       }
     }

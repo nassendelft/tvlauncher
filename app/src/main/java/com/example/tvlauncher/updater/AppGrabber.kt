@@ -7,6 +7,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.os.Environment
 import android.os.Environment.DIRECTORY_DOWNLOADS
 import androidx.core.net.toUri
@@ -52,8 +53,8 @@ class AppGrabber @Inject constructor(
 
     val request = DownloadManager.Request(release.file.url.toUri())
       .setMimeType("application/vnd.android.package-archive")
-      .setTitle(context.applicationInfo.loadLabel(context.packageManager))
-      .setDescription("Downloading ${release.version}")
+      .setTitle("Downloading app update")
+      .setDescription("version ${release.version}")
       .setDestinationInExternalFilesDir(context, DIRECTORY_DOWNLOADS, release.file.name)
     return getStatus(downloadManager.enqueue(request))
   }

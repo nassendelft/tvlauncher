@@ -1,15 +1,24 @@
 package com.example.tvlauncher.updater
 
+import android.content.Context
 import android.net.Uri
 import android.util.Log
+import androidx.core.content.FileProvider
+import androidx.core.net.toFile
 import androidx.core.net.toUri
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
-import androidx.work.*
+import androidx.work.Data
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import java.io.File
 import java.util.*
 import javax.inject.Inject
+import javax.inject.Provider
 import javax.inject.Singleton
 
 /**
@@ -19,12 +28,20 @@ import javax.inject.Singleton
  * Use [checkForUpdate] to start the update check process and use the [update] field
  * to check the events that it emits.
  *
+ * @param context application context used to to be able to share the downloaded update file
+ * with installer
+ * @param workManagerProvider provider is given instead of an instance to prevent premature
+ * initialization of the [WorkManager]
+ *
  * @see AppUpdateWork
  */
 @Singleton
 class AppUpdate @Inject constructor(
-  private val workManager: WorkManager
+  @ApplicationContext private val context: Context,
+  private val workManagerProvider: Provider<WorkManager>
 ) {
+
+  private val workManager by lazy { workManagerProvider.get() }
 
   private val _update = MutableStateFlow<Update?>(null)
   val update: StateFlow<Update?> = _update
@@ -90,9 +107,21 @@ class AppUpdate @Inject constructor(
     _update.value = null
   }
 
+  /**
+   * Calls [FileProvider.getUriForFile] to setup the file path in this string for sharing
+   * outside this application.
+   * This string must be a valid URI.
+   */
+  private val String.asShareableUri
+    get() = FileProvider.getUriForFile(
+      context,
+      context.packageName + ".apkprovider",
+      this.toUri().toFile()
+    )
+
   private val Data.asUpdate
     get() = Update(
-      fileUri = getString(AppUpdateWork.KEY_URI)?.toUri()
+      fileUri = getString(AppUpdateWork.KEY_URI)?.asShareableUri
         ?: error("Could not find any value for key '${AppUpdateWork.KEY_URI}'"),
       date = getLong(AppUpdateWork.KEY_DATE, 0).takeIf { it != 0L }?.let { Date(it) }
         ?: error("Could not find any value for key '${AppUpdateWork.KEY_DATE}'"),

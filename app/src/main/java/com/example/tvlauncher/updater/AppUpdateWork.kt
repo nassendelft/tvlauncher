@@ -6,7 +6,6 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
-import com.example.tvlauncher.BuildConfig
 import com.example.tvlauncher.BuildConfig.VERSION_NAME
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject

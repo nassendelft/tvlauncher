@@ -30,6 +30,4 @@ class HomeViewModel @Inject constructor(
       appUpdater.update.collect { update = it }
     }
   }
-
-  fun notifyAppInstalled() = appUpdater.notifyInstalled()
 }

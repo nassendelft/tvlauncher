@@ -28,14 +28,11 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.core.content.FileProvider
 import androidx.core.graphics.drawable.toBitmap
-import androidx.core.net.toFile
 import com.example.tvlauncher.AppLauncherContract
 import com.example.tvlauncher.R
 
@@ -138,8 +135,7 @@ fun Home(
     Log.d("ApkInstall", "Launch install result code: $it")
   }
   val appLauncher = rememberLauncherForActivityResult(viewModel.launcherContract) {
-    Log.d("AppLaunch", "Launch app result code: $it")
-    if (it == Activity.RESULT_OK) viewModel.notifyAppInstalled()
+    // will not be called the update is installed because it will stop this app's process
   }
 
   val uri = viewModel.update?.fileUri

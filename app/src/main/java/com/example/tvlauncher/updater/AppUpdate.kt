@@ -15,7 +15,6 @@ import androidx.work.WorkManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import java.io.File
 import java.util.*
 import javax.inject.Inject
 import javax.inject.Provider
@@ -101,10 +100,6 @@ class AppUpdate @Inject constructor(
       liveData.removeObserver(this)
       runningId = null
     }
-  }
-
-  fun notifyInstalled() {
-    _update.value = null
   }
 
   /**

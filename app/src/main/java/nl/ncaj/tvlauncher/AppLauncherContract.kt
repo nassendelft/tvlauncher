@@ -3,11 +3,12 @@ package nl.ncaj.tvlauncher
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContract
 import javax.inject.Inject
 
 /**
- * Contract to just start an application of given package name.
+ * Contract to start an application of given package name.
  *
  * @param packageManager an instance of this application's [PackageManager]
  */
@@ -24,5 +25,31 @@ class AppLauncherContract @Inject constructor(
 
   override fun parseResult(resultCode: Int, intent: Intent?) = resultCode
 
-  data class Input(val packageName: String, val preferLeanback: Boolean = true)
+  /**
+   * Input for [AppLauncherContract]
+   *
+   * @param packageName the package name of the app to start
+   * @param preferLeanback if the app has a leanback launcher prefer that over a 'normal' one
+   */
+  data class Input(
+    val packageName: String, val
+    preferLeanback: Boolean = true
+  )
+
+  companion object {
+
+    /**
+     * Convenience function for [ManagedActivityResultLauncher.launch] without
+     * the need to create a new instance of [Input] ourselves.
+     *
+     * @param packageName the package name of the app to start
+     * @param preferLeanback if the app has a leanback launcher prefer that over a 'normal' one
+     */
+    fun ManagedActivityResultLauncher<Input, Int>.launch(
+      packageName: String,
+      preferLeanback: Boolean = true
+    ) = launch(Input(packageName, preferLeanback))
+  }
 }
+
+typealias AppLauncher = ManagedActivityResultLauncher<AppLauncherContract.Input, Int>

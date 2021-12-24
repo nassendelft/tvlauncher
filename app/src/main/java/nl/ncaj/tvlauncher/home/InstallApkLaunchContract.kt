@@ -4,7 +4,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.Intent.*
 import android.net.Uri
+import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContract
+import nl.ncaj.tvlauncher.AppLauncherContract
 
 /**
  * Creates an intent that will query the system to install the app from the given uri.
@@ -22,3 +24,5 @@ object InstallApkResultContract : ActivityResultContract<Uri, Int>() {
 
   override fun parseResult(resultCode: Int, intent: Intent?) = resultCode
 }
+
+typealias InstallUpdateLauncher = ManagedActivityResultLauncher<Uri, Int>

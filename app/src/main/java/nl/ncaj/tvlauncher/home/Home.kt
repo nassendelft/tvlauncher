@@ -1,8 +1,6 @@
 package nl.ncaj.tvlauncher.home
 
 import android.graphics.drawable.Drawable
-import android.util.Log
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -10,12 +8,10 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material.Button
-import androidx.compose.material.Text
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -27,13 +23,17 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
-import nl.ncaj.tvlauncher.AppLauncherContract
+import nl.ncaj.tvlauncher.AppLauncherContract.Companion.launch
 import nl.ncaj.tvlauncher.R
+import nl.ncaj.tvlauncher.updater.AppUpdate
 
 data class LeanbackApp(
   val name: CharSequence,
@@ -52,9 +52,9 @@ private val Drawable.asPainter get() = BitmapPainter(this.toBitmap().asImageBitm
 
 @Composable
 private fun LeanbackAppItem(
-    app: LeanbackApp,
-    modifier: Modifier = Modifier,
-    onClick: (LeanbackApp) -> Unit = {}
+  app: LeanbackApp,
+  modifier: Modifier = Modifier,
+  onClick: (LeanbackApp) -> Unit = {}
 ) {
   var focused by remember { mutableStateOf(false) }
   Box(
@@ -85,12 +85,12 @@ private fun LeanbackAppItem(
 
 @Composable
 private fun LeanbackAppGrid(
-    items: List<LeanbackApp>,
-    modifier: Modifier = Modifier,
-    columns: Int = 5,
-    spacing: Dp = 20.dp,
-    itemRatio: Float = 0.5625f,
-    openApplication: (LeanbackApp) -> Unit = {}
+  items: List<LeanbackApp>,
+  modifier: Modifier = Modifier,
+  columns: Int = 5,
+  spacing: Dp = 20.dp,
+  itemRatio: Float = 0.5625f,
+  openApplication: (LeanbackApp) -> Unit = {}
 ) {
   // focusRequest is need to give initial focus
   // to first item on composition
@@ -127,29 +127,70 @@ private fun LeanbackAppGrid(
 }
 
 @Composable
+private fun UpdateBox(
+  update: AppUpdate.Update,
+  onClick: (AppUpdate.Update) -> Unit,
+  modifier: Modifier = Modifier
+) {
+  var updateFocused by remember { mutableStateOf(false) }
+
+  Box(
+    modifier = modifier
+      .clickable { onClick(update) }
+      .onKeyEvent {
+        if (it.key == Key.Enter) {
+          onClick(update)
+          return@onKeyEvent true
+        }
+        return@onKeyEvent false
+      },
+  ) {
+    Column(
+      modifier = Modifier
+        .padding(20.dp)
+        .onFocusChanged { updateFocused = it.isFocused }
+        .focusable(true)
+    ) {
+      BasicText(
+        text = "New update is available!",
+        style = TextStyle.Default.copy(
+          color = Color.White,
+          fontSize = 16.sp
+        )
+      )
+    }
+    Canvas(
+      modifier = Modifier.matchParentSize()
+    ) {
+      drawRect(
+        color = if (updateFocused) Color.Red else Color.Black,
+        style = Stroke(3.0f)
+      )
+    }
+  }
+}
+
+@Composable
 fun Home(
   viewModel: HomeViewModel
 ) {
-  val launcher = rememberLauncherForActivityResult(InstallApkResultContract) {
-    Log.d("ApkInstall", "Launch install result code: $it")
-  }
-  val appLauncher = rememberLauncherForActivityResult(viewModel.launcherContract) {
-    // will not be called the update is installed because it will stop this app's process
-  }
+  val appLauncher = viewModel.getActivityLauncher()
+  val installLauncher = viewModel.getUpdateInstallLauncher()
+  val update by viewModel.getUpdates()
 
-  val uri = viewModel.update?.fileUri
-
-  Column(horizontalAlignment = Alignment.End) {
-    Box(Modifier.padding(top = 20.dp, end = 20.dp)) {
-      Button(
-        modifier = Modifier.alpha(if (uri == null) 0.0f else 1.0f),
-        onClick = { if (uri != null) launcher.launch(uri) }) {
-        Text("Update to latest version")
-      }
+  Column {
+    update?.let {
+      UpdateBox(
+        onClick = { update -> installLauncher.launch(update.fileUri) },
+        update = it,
+        modifier = Modifier
+          .align(Alignment.End)
+          .padding(16.dp)
+      )
     }
     LeanbackAppGrid(
       items = viewModel.apps,
-      openApplication = { appLauncher.launch(AppLauncherContract.Input(it.packageName)) }
+      openApplication = { appLauncher.launch(it.packageName) }
     )
   }
 }

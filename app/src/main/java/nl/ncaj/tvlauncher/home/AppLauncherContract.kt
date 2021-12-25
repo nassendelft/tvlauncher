@@ -1,4 +1,4 @@
-package nl.ncaj.tvlauncher
+package nl.ncaj.tvlauncher.home
 
 import android.content.Context
 import android.content.Intent

@@ -12,18 +12,16 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onKeyEvent
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
@@ -31,8 +29,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
-import nl.ncaj.tvlauncher.AppLauncherContract.Companion.launch
 import nl.ncaj.tvlauncher.R
+import nl.ncaj.tvlauncher.home.AppLauncherContract.Companion.launch
+import nl.ncaj.tvlauncher.launch
+import nl.ncaj.tvlauncher.onEnterKeyEvent
 import nl.ncaj.tvlauncher.updater.AppUpdate
 
 data class LeanbackApp(
@@ -62,13 +62,7 @@ private fun LeanbackAppItem(
       .onFocusChanged { focused = it.isFocused }
       .focusable()
       .clickable { onClick(app) }
-      .onKeyEvent {
-        if (it.key == Key.Enter) {
-          onClick(app)
-          return@onKeyEvent true
-        }
-        return@onKeyEvent false
-      }
+      .onEnterKeyEvent { onClick(app) }
   ) {
     Image(
       painter = app.banner,
@@ -137,13 +131,7 @@ private fun UpdateBox(
   Box(
     modifier = modifier
       .clickable { onClick(update) }
-      .onKeyEvent {
-        if (it.key == Key.Enter) {
-          onClick(update)
-          return@onKeyEvent true
-        }
-        return@onKeyEvent false
-      },
+      .onEnterKeyEvent { onClick(update) },
   ) {
     Column(
       modifier = Modifier
@@ -171,22 +159,62 @@ private fun UpdateBox(
 }
 
 @Composable
+private fun GearSettings(
+  onClick: () -> Unit,
+  modifier: Modifier = Modifier
+) {
+  var focused by remember { mutableStateOf(false) }
+  Row(
+    modifier = modifier
+      .clickable { onClick() }
+      .onEnterKeyEvent { onClick() }
+      .onFocusChanged { focused = it.isFocused }
+      .focusable(true),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Image(
+      painter = painterResource(id = R.drawable.ic_outline_settings_24),
+      contentDescription = "Settings",
+      colorFilter = ColorFilter.tint(if (focused) Color.Red else Color.White)
+    )
+    Spacer(
+      modifier = Modifier.width(8.dp)
+    )
+    BasicText(
+      text = "Settings",
+      style = TextStyle.Default.copy(color = Color.Red),
+      modifier = Modifier.alpha(if (focused) 1.0f else 0.0f)
+    )
+  }
+}
+
+@Composable
 fun Home(
   viewModel: HomeViewModel
 ) {
-  val appLauncher = viewModel.getActivityLauncher()
+  val appLauncher = viewModel.getAppLauncher()
   val installLauncher = viewModel.getUpdateInstallLauncher()
+  val settingsLauncher = viewModel.getSettingLauncher()
   val update by viewModel.getUpdates()
 
   Column {
-    update?.let {
-      UpdateBox(
-        onClick = { update -> installLauncher.launch(update.fileUri) },
-        update = it,
-        modifier = Modifier
-          .align(Alignment.End)
-          .padding(16.dp)
+    Row(
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(16.dp)
+    ) {
+      GearSettings(
+        onClick = { settingsLauncher.launch() }
       )
+      Spacer(
+        modifier = Modifier.weight(1.0f)
+      )
+      update?.let {
+        UpdateBox(
+          onClick = { update -> installLauncher.launch(update.fileUri) },
+          update = it,
+        )
+      }
     }
     LeanbackAppGrid(
       items = viewModel.apps,

@@ -5,9 +5,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
-import nl.ncaj.tvlauncher.AppLauncher
-import nl.ncaj.tvlauncher.AppLauncherContract
 import nl.ncaj.tvlauncher.updater.AppUpdate
+import nl.ncaj.tvlauncher.updater.InstallApkResultContract
+import nl.ncaj.tvlauncher.updater.InstallUpdateLauncher
 import javax.inject.Inject
 
 @HiltViewModel
@@ -22,7 +22,7 @@ class HomeViewModel @Inject constructor(
   fun getUpdates() = appUpdater.update.collectAsState(null)
 
   @Composable
-  fun getActivityLauncher(): AppLauncher =
+  fun getAppLauncher(): AppLauncher =
     rememberLauncherForActivityResult(launcherContract) {
       // if the user returns from this activity we ignore the result
     }
@@ -32,5 +32,11 @@ class HomeViewModel @Inject constructor(
     rememberLauncherForActivityResult(InstallApkResultContract) {
       // never returns RESULT_OK because when the app is update this process is killed
       // RESULT_CANCELLED is ignored
+    }
+
+  @Composable
+  fun getSettingLauncher(): SettingsLauncher =
+    rememberLauncherForActivityResult(SettingsLauncherContract) {
+      // if the user returns from this activity we ignore the result
     }
 }

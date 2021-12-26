@@ -13,8 +13,11 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.channelFlow
 import java.util.*
 import javax.inject.Inject
 import javax.inject.Provider
@@ -60,20 +63,26 @@ class AppUpdate @Inject constructor(
     val request = OneTimeWorkRequestBuilder<AppUpdateWork>().build()
     runningId = request.id
     workManager.enqueue(request)
+
+    // observe the work info changes
     val liveData = workManager.getWorkInfoByIdLiveData(request.id)
-    liveData.observeForever(getUpdatesObserver(liveData))
+    val updatesObserver = liveData.getUpdatesObserver {
+      _update.value = it
+      runningId = null
+    }
+    liveData.observeForever(updatesObserver)
   }
 
   /**
    * Observers all updates from worker until either the work info could not be find,
    * or it completed. If it completed and has found an update the [update] value will be set
    */
-  private fun getUpdatesObserver(
-    liveData: LiveData<WorkInfo>
+  private fun LiveData<WorkInfo>.getUpdatesObserver(
+    block: (Update?) -> Unit
   ) = object : Observer<WorkInfo> {
     override fun onChanged(workInfo: WorkInfo?) {
       if (workInfo == null) {
-        clear()
+        removeObserver(this)
         return
       }
       when (workInfo.state) {
@@ -82,23 +91,18 @@ class AppUpdate @Inject constructor(
         WorkInfo.State.RUNNING,
         WorkInfo.State.BLOCKED -> return // do nothing
         WorkInfo.State.FAILED,
-        WorkInfo.State.CANCELLED -> clear()
+        WorkInfo.State.CANCELLED -> removeObserver(this)
       }
     }
 
     private fun onCompleted(workInfo: WorkInfo) {
       val hasUpdate = workInfo.outputData.getBoolean(AppUpdateWork.KEY_HAS_UPDATE, false)
       if (hasUpdate) {
-        _update.value = workInfo.outputData.asUpdate
+        block(workInfo.outputData.asUpdate)
       } else {
-        _update.value = null
+        block(null)
       }
-      clear()
-    }
-
-    private fun clear() {
-      liveData.removeObserver(this)
-      runningId = null
+      removeObserver(this)
     }
   }
 

@@ -1,8 +1,6 @@
 package nl.ncaj.tvlauncher.home
 
 import android.graphics.drawable.Drawable
-import android.util.Log
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -10,8 +8,7 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material.Button
-import androidx.compose.material.Text
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,20 +17,23 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
-import nl.ncaj.tvlauncher.AppLauncherContract
 import nl.ncaj.tvlauncher.R
+import nl.ncaj.tvlauncher.home.AppLauncherContract.Companion.launch
+import nl.ncaj.tvlauncher.launch
+import nl.ncaj.tvlauncher.onEnterKeyEvent
+import nl.ncaj.tvlauncher.updater.AppUpdate
 
 data class LeanbackApp(
   val name: CharSequence,
@@ -52,9 +52,9 @@ private val Drawable.asPainter get() = BitmapPainter(this.toBitmap().asImageBitm
 
 @Composable
 private fun LeanbackAppItem(
-    app: LeanbackApp,
-    modifier: Modifier = Modifier,
-    onClick: (LeanbackApp) -> Unit = {}
+  app: LeanbackApp,
+  modifier: Modifier = Modifier,
+  onClick: (LeanbackApp) -> Unit = {}
 ) {
   var focused by remember { mutableStateOf(false) }
   Box(
@@ -62,13 +62,7 @@ private fun LeanbackAppItem(
       .onFocusChanged { focused = it.isFocused }
       .focusable()
       .clickable { onClick(app) }
-      .onKeyEvent {
-        if (it.key == Key.Enter) {
-          onClick(app)
-          return@onKeyEvent true
-        }
-        return@onKeyEvent false
-      }
+      .onEnterKeyEvent { onClick(app) }
   ) {
     Image(
       painter = app.banner,
@@ -85,12 +79,12 @@ private fun LeanbackAppItem(
 
 @Composable
 private fun LeanbackAppGrid(
-    items: List<LeanbackApp>,
-    modifier: Modifier = Modifier,
-    columns: Int = 5,
-    spacing: Dp = 20.dp,
-    itemRatio: Float = 0.5625f,
-    openApplication: (LeanbackApp) -> Unit = {}
+  items: List<LeanbackApp>,
+  modifier: Modifier = Modifier,
+  columns: Int = 5,
+  spacing: Dp = 20.dp,
+  itemRatio: Float = 0.5625f,
+  openApplication: (LeanbackApp) -> Unit = {}
 ) {
   // focusRequest is need to give initial focus
   // to first item on composition
@@ -127,29 +121,104 @@ private fun LeanbackAppGrid(
 }
 
 @Composable
+private fun UpdateBox(
+  update: AppUpdate.Update,
+  onClick: (AppUpdate.Update) -> Unit,
+  modifier: Modifier = Modifier
+) {
+  var updateFocused by remember { mutableStateOf(false) }
+
+  Box(
+    modifier = modifier
+      .clickable { onClick(update) }
+      .onEnterKeyEvent { onClick(update) },
+  ) {
+    Column(
+      modifier = Modifier
+        .padding(20.dp)
+        .onFocusChanged { updateFocused = it.isFocused }
+        .focusable(true)
+    ) {
+      BasicText(
+        text = "New update is available!",
+        style = TextStyle.Default.copy(
+          color = Color.White,
+          fontSize = 16.sp
+        )
+      )
+    }
+    Canvas(
+      modifier = Modifier.matchParentSize()
+    ) {
+      drawRect(
+        color = if (updateFocused) Color.Red else Color.Black,
+        style = Stroke(3.0f)
+      )
+    }
+  }
+}
+
+@Composable
+private fun GearSettings(
+  onClick: () -> Unit,
+  modifier: Modifier = Modifier
+) {
+  var focused by remember { mutableStateOf(false) }
+  Row(
+    modifier = modifier
+      .clickable { onClick() }
+      .onEnterKeyEvent { onClick() }
+      .onFocusChanged { focused = it.isFocused }
+      .focusable(true),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Image(
+      painter = painterResource(id = R.drawable.ic_outline_settings_24),
+      contentDescription = "Settings",
+      colorFilter = ColorFilter.tint(if (focused) Color.Red else Color.White)
+    )
+    Spacer(
+      modifier = Modifier.width(8.dp)
+    )
+    BasicText(
+      text = "Settings",
+      style = TextStyle.Default.copy(color = Color.Red),
+      modifier = Modifier.alpha(if (focused) 1.0f else 0.0f)
+    )
+  }
+}
+
+@Composable
 fun Home(
   viewModel: HomeViewModel
 ) {
-  val launcher = rememberLauncherForActivityResult(InstallApkResultContract) {
-    Log.d("ApkInstall", "Launch install result code: $it")
-  }
-  val appLauncher = rememberLauncherForActivityResult(viewModel.launcherContract) {
-    // will not be called the update is installed because it will stop this app's process
-  }
+  val appLauncher = viewModel.getAppLauncher()
+  val installLauncher = viewModel.getUpdateInstallLauncher()
+  val settingsLauncher = viewModel.getSettingLauncher()
+  val update by viewModel.getUpdates()
 
-  val uri = viewModel.update?.fileUri
-
-  Column(horizontalAlignment = Alignment.End) {
-    Box(Modifier.padding(top = 20.dp, end = 20.dp)) {
-      Button(
-        modifier = Modifier.alpha(if (uri == null) 0.0f else 1.0f),
-        onClick = { if (uri != null) launcher.launch(uri) }) {
-        Text("Update to latest version")
+  Column {
+    Row(
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(16.dp)
+    ) {
+      GearSettings(
+        onClick = { settingsLauncher.launch() }
+      )
+      Spacer(
+        modifier = Modifier.weight(1.0f)
+      )
+      update?.let {
+        UpdateBox(
+          onClick = { update -> installLauncher.launch(update.fileUri) },
+          update = it,
+        )
       }
     }
     LeanbackAppGrid(
       items = viewModel.apps,
-      openApplication = { appLauncher.launch(AppLauncherContract.Input(it.packageName)) }
+      openApplication = { appLauncher.launch(it.packageName) }
     )
   }
 }

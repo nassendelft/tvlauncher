@@ -1,32 +1,42 @@
 package nl.ncaj.tvlauncher.home
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import nl.ncaj.tvlauncher.AppLauncherContract
-import nl.ncaj.tvlauncher.updater.AppUpdate
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
+import nl.ncaj.tvlauncher.updater.AppUpdate
+import nl.ncaj.tvlauncher.updater.InstallApkResultContract
+import nl.ncaj.tvlauncher.updater.InstallUpdateLauncher
 import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    appResolver: ApplicationResolver,
-    private val appUpdater: AppUpdate,
-    val launcherContract: AppLauncherContract
+  appResolver: ApplicationResolver,
+  private val appUpdater: AppUpdate,
+  private val launcherContract: AppLauncherContract
 ) : ViewModel() {
-  var apps by mutableStateOf<List<LeanbackApp>>(emptyList())
-    private set
+  val apps = appResolver.getLeanbackLaunchApplications().map { it.asLeanbackApp }
 
-  var update by mutableStateOf<AppUpdate.Update?>(null)
+  @Composable
+  fun getUpdates() = appUpdater.update.collectAsState(null)
 
-  init {
-    apps = appResolver.getLeanbackLaunchApplications().map { it.asLeanbackApp }
-    viewModelScope.launch {
-      appUpdater.update.collect { update = it }
+  @Composable
+  fun getAppLauncher(): AppLauncher =
+    rememberLauncherForActivityResult(launcherContract) {
+      // if the user returns from this activity we ignore the result
     }
-  }
+
+  @Composable
+  fun getUpdateInstallLauncher(): InstallUpdateLauncher =
+    rememberLauncherForActivityResult(InstallApkResultContract) {
+      // never returns RESULT_OK because when the app is update this process is killed
+      // RESULT_CANCELLED is ignored
+    }
+
+  @Composable
+  fun getSettingLauncher(): SettingsLauncher =
+    rememberLauncherForActivityResult(SettingsLauncherContract) {
+      // if the user returns from this activity we ignore the result
+    }
 }

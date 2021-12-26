@@ -1,9 +1,10 @@
-package nl.ncaj.tvlauncher.home
+package nl.ncaj.tvlauncher.updater
 
 import android.content.Context
 import android.content.Intent
 import android.content.Intent.*
 import android.net.Uri
+import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContract
 
 /**
@@ -22,3 +23,5 @@ object InstallApkResultContract : ActivityResultContract<Uri, Int>() {
 
   override fun parseResult(resultCode: Int, intent: Intent?) = resultCode
 }
+
+typealias InstallUpdateLauncher = ManagedActivityResultLauncher<Uri, Int>

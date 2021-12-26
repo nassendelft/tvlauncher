@@ -1,6 +1,13 @@
 package nl.ncaj.tvlauncher.home
 
 import android.graphics.drawable.Drawable
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -13,6 +20,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -57,8 +65,10 @@ private fun LeanbackAppItem(
   onClick: (LeanbackApp) -> Unit = {}
 ) {
   var focused by remember { mutableStateOf(false) }
+  val scale by animateFloatAsState(if (focused) 1.2f else 1f)
   Box(
     modifier = modifier
+      .scale(scale)
       .onFocusChanged { focused = it.isFocused }
       .focusable()
       .clickable { onClick(app) }

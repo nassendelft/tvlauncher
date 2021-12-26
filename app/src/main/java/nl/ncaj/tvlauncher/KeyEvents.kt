@@ -9,7 +9,7 @@ private val acceptKeys = listOf(
 )
 
 /**
- * Calls [onEnter] when the key pressed is of [Key.Enter]
+ * Calls [onEnter] when the key pressed is of one of [acceptKeys]
  * and the event is of [KeyEventType.KeyUp].
  *
  * @param onEnter the lambda that is called when the above criteria is met

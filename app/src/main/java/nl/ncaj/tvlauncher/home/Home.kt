@@ -1,16 +1,8 @@
 package nl.ncaj.tvlauncher.home
 
-import android.graphics.drawable.Drawable
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.animation.SizeTransform
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,62 +18,65 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.painter.BitmapPainter
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.graphics.drawable.toBitmap
+import androidx.compose.ui.zIndex
+import nl.ncaj.tvlauncher.*
 import nl.ncaj.tvlauncher.R
 import nl.ncaj.tvlauncher.home.AppLauncherContract.Companion.launch
-import nl.ncaj.tvlauncher.launch
-import nl.ncaj.tvlauncher.onEnterKeyEvent
 import nl.ncaj.tvlauncher.updater.AppUpdate
-
-data class LeanbackApp(
-  val name: CharSequence,
-  val banner: Painter,
-  val packageName: String
-)
-
-val ApplicationResolver.ResolvedApplication.asLeanbackApp
-  get() = LeanbackApp(
-    name = loadLaunchLabel(),
-    banner = (loadBanner() ?: error("Banner required for leanback app")).asPainter,
-    packageName = packageName
-  )
-
-private val Drawable.asPainter get() = BitmapPainter(this.toBitmap().asImageBitmap())
 
 @Composable
 private fun LeanbackAppItem(
   app: LeanbackApp,
+  onClick: (LeanbackApp) -> Unit,
   modifier: Modifier = Modifier,
-  onClick: (LeanbackApp) -> Unit = {}
 ) {
   var focused by remember { mutableStateOf(false) }
-  val scale by animateFloatAsState(if (focused) 1.2f else 1f)
+  val scale by animateFloatAsState(if (focused) 1.3f else 1f)
+  val selectedPaddingVertical = remember {
+    // make sure that we have the matching padding based on the size ratio
+    4.dp * (app.banner.intrinsicSize.height / app.banner.intrinsicSize.width)
+  }
+
   Box(
     modifier = modifier
+      .then(if (focused) Modifier.zIndex(1f) else Modifier)
       .scale(scale)
       .onFocusChanged { focused = it.isFocused }
       .focusable()
-      .clickable { onClick(app) }
-      .onEnterKeyEvent { onClick(app) }
+      .onUserInteraction { onClick(app) }
   ) {
-    Image(
-      painter = app.banner,
-      contentDescription = app.name.toString(),
-      modifier = Modifier.fillMaxSize()
-    )
     if (focused) {
-      Canvas(modifier = Modifier.fillMaxSize()) {
-        drawRect(color = Color.Red, style = Stroke(3.0f))
+      OuterGlow(
+        color = Color.Black.copy(alpha = 0.6f),
+        modifier = Modifier.fillMaxSize()
+      )
+    }
+    Box(
+      modifier = Modifier.padding(
+        horizontal = if (focused) 4.dp else 0.dp,
+        vertical = if (focused) selectedPaddingVertical else 0.dp
+      )
+    ) {
+      Image(
+        painter = app.banner,
+        contentDescription = app.name.toString(),
+        modifier = Modifier.fillMaxSize()
+      )
+      if (focused) {
+        Canvas(
+          modifier = Modifier.fillMaxSize()
+        ) {
+          drawRect(
+            color = app.strokeColor,
+            style = Stroke(4.0f)
+          )
+        }
       }
     }
   }
@@ -101,15 +96,19 @@ private fun LeanbackAppGrid(
   val focusRequester = remember { FocusRequester() }
   LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
-  BoxWithConstraints(modifier.fillMaxHeight()) {
-    val cellWidth = (maxWidth - (spacing * (columns + 1))) / columns
-    val cellHeight = cellWidth * itemRatio
+  BoxWithConstraints(
+    modifier = modifier.fillMaxHeight()
+  ) {
+    val cellWidth = remember { (maxWidth - (spacing * (columns + 1))) / columns }
+    val cellHeight = remember { cellWidth * itemRatio }
 
     LazyColumn(
       verticalArrangement = Arrangement.spacedBy(spacing),
       contentPadding = PaddingValues(spacing)
     ) {
-      itemsIndexed(items = items.chunked(columns)) { rowIndex, rowItems ->
+      itemsIndexed(
+        items = items.chunked(columns)
+      ) { rowIndex, rowItems ->
         Row(
           modifier = Modifier.fillParentMaxWidth(),
           horizontalArrangement = Arrangement.spacedBy(spacing)
@@ -139,9 +138,7 @@ private fun UpdateBox(
   var updateFocused by remember { mutableStateOf(false) }
 
   Box(
-    modifier = modifier
-      .clickable { onClick(update) }
-      .onEnterKeyEvent { onClick(update) },
+    modifier = modifier.onUserInteraction { onClick(update) },
   ) {
     Column(
       modifier = Modifier
@@ -174,10 +171,10 @@ private fun GearSettings(
   modifier: Modifier = Modifier
 ) {
   var focused by remember { mutableStateOf(false) }
+
   Row(
     modifier = modifier
-      .clickable { onClick() }
-      .onEnterKeyEvent { onClick() }
+      .onUserInteraction { onClick() }
       .onFocusChanged { focused = it.isFocused }
       .focusable(true),
     verticalAlignment = Alignment.CenterVertically
@@ -205,7 +202,8 @@ fun Home(
   val appLauncher = viewModel.getAppLauncher()
   val installLauncher = viewModel.getUpdateInstallLauncher()
   val settingsLauncher = viewModel.getSettingLauncher()
-  val update by viewModel.getUpdates()
+  val update by viewModel.getAppUpdate()
+  val appsState by viewModel.getApps()
 
   Column {
     Row(
@@ -226,21 +224,11 @@ fun Home(
         )
       }
     }
-    LeanbackAppGrid(
-      items = viewModel.apps,
-      openApplication = { appLauncher.launch(it.packageName) }
-    )
+    (appsState as? FetchDataState.Data)?.value?.let { apps ->
+      LeanbackAppGrid(
+        items = apps,
+        openApplication = { app -> appLauncher.launch(app.packageName) }
+      )
+    }
   }
-}
-
-@Preview(
-  showBackground = true,
-  widthDp = 1280,
-  heightDp = 720,
-)
-@Composable
-fun PreviewAppGrid() {
-  val banner = painterResource(id = R.drawable.banner)
-  val apps = (1 until 13).map { LeanbackApp(it.toString(), banner, "packageName") }
-  LeanbackAppGrid(items = apps)
 }

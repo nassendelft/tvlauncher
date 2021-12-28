@@ -1,6 +1,9 @@
 package nl.ncaj.tvlauncher.home
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.focusable
@@ -25,9 +28,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import nl.ncaj.tvlauncher.*
+import nl.ncaj.tvlauncher.FetchDataState
 import nl.ncaj.tvlauncher.R
 import nl.ncaj.tvlauncher.home.AppLauncherContract.Companion.launch
+import nl.ncaj.tvlauncher.launch
+import nl.ncaj.tvlauncher.onUserInteraction
 import nl.ncaj.tvlauncher.updater.AppUpdate
 
 @Composable
@@ -68,7 +73,11 @@ private fun LeanbackAppItem(
         contentDescription = app.name.toString(),
         modifier = Modifier.fillMaxSize()
       )
-      if (focused) {
+      AnimatedVisibility(
+        visible = focused,
+        enter = fadeIn(),
+        exit = fadeOut(),
+      ) {
         Canvas(
           modifier = Modifier.fillMaxSize()
         ) {

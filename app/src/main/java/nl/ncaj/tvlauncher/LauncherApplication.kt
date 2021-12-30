@@ -2,8 +2,8 @@ package nl.ncaj.tvlauncher
 
 import android.app.Application
 import androidx.work.Configuration
-import nl.ncaj.tvlauncher.updater.AppUpdate
 import dagger.hilt.android.HiltAndroidApp
+import nl.ncaj.tvlauncher.updater.AppUpdate
 import javax.inject.Inject
 
 @HiltAndroidApp

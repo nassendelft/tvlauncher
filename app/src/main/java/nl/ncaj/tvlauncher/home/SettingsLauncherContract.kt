@@ -2,7 +2,6 @@ package nl.ncaj.tvlauncher.home
 
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.provider.Settings.ACTION_SETTINGS
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContract

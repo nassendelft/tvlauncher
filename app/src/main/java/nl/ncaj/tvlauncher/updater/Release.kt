@@ -1,6 +1,6 @@
 package nl.ncaj.tvlauncher.updater
 
-import java.util.Date
+import java.util.*
 
 data class Release(
     val version: String,

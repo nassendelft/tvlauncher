@@ -6,12 +6,12 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
-import nl.ncaj.tvlauncher.BuildConfig.VERSION_NAME
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.single
 import net.swiftzer.semver.SemVer
+import nl.ncaj.tvlauncher.BuildConfig.VERSION_NAME
 import okio.IOException
 import javax.inject.Inject
 

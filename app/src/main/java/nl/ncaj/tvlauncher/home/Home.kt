@@ -9,8 +9,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -103,15 +101,9 @@ fun Home(
   val update by viewModel.getAppUpdate()
   val categories = (viewModel.categories as? FetchDataState.Data)?.value ?: emptyList()
 
-  // focusRequest is need to give initial focus
-  // to first item on composition
-  val focusRequester = remember { FocusRequester() }
-  LaunchedEffect(Unit) { focusRequester.requestFocus() }
-
   LeanbackAppGrid(
     categories = categories,
     openApplication = { app -> appLauncher.launch(app.packageName) },
-    modifier = Modifier.focusRequester(focusRequester),
     headerItem = {
       item {
         Row(

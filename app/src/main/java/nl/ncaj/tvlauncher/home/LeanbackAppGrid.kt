@@ -16,6 +16,8 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -41,21 +43,29 @@ fun LeanbackAppGrid(
 ) {
   val scope = rememberCoroutineScope()
   var lastKeyEvent by remember { mutableStateOf(0L) }
+
+  // focusRequest is needed to give initial focus
+  // to first item on composition
+  LaunchedEffect(Unit) { state.focusRequesters.firstOrNull()?.firstOrNull()?.requestFocus() }
+
   LazyColumn(
     verticalArrangement = Arrangement.spacedBy(state.itemSpacing),
     contentPadding = PaddingValues(state.itemSpacing),
     state = state.lazyListState,
-    modifier = modifier.onPreviewKeyEvent {
-      if (it.type == KeyEventType.KeyDown
-        && it.key == Key.DirectionUp || it.key == Key.DirectionDown) {
-        // throttle the up and down directions so we have time to animate the scrolling
-        val currentTimeMillis = System.currentTimeMillis()
-        val shouldThrottle = lastKeyEvent != 0L && currentTimeMillis - lastKeyEvent < 300
-        if (currentTimeMillis - lastKeyEvent > 300 || lastKeyEvent == 0L) lastKeyEvent = currentTimeMillis
-        return@onPreviewKeyEvent shouldThrottle
+    modifier = modifier
+      .onPreviewKeyEvent {
+        if (it.type == KeyEventType.KeyDown
+          && it.key == Key.DirectionUp || it.key == Key.DirectionDown
+        ) {
+          // throttle the up and down directions so we have time to animate the scrolling
+          val currentTimeMillis = System.currentTimeMillis()
+          val shouldThrottle = lastKeyEvent != 0L && currentTimeMillis - lastKeyEvent < 300
+          if (currentTimeMillis - lastKeyEvent > 300 || lastKeyEvent == 0L) lastKeyEvent =
+            currentTimeMillis
+          return@onPreviewKeyEvent shouldThrottle
+        }
+        return@onPreviewKeyEvent false
       }
-      return@onPreviewKeyEvent false
-    }
   ) {
     headerItem(Modifier.onFocusChanged {
       if (it.hasFocus) scope.launch { state.lazyListState.animateScrollToItem(0) }

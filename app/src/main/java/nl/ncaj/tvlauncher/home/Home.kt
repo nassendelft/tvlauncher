@@ -1,5 +1,7 @@
 package nl.ncaj.tvlauncher.home
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.focusable
@@ -8,10 +10,11 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -68,26 +71,39 @@ private fun GearSettings(
 ) {
   var focused by remember { mutableStateOf(false) }
 
-  Row(
+  Box(
     modifier = modifier
       .onUserInteraction { onClick() }
       .onFocusChanged { focused = it.isFocused }
-      .focusable(true),
-    verticalAlignment = Alignment.CenterVertically
+      .focusable(true)
+      .animateContentSize(tween())
   ) {
-    Image(
-      painter = painterResource(id = R.drawable.ic_outline_settings_24),
-      contentDescription = "Settings",
-      colorFilter = ColorFilter.tint(if (focused) Color.Red else Color.White)
-    )
-    Spacer(
-      modifier = Modifier.width(8.dp)
-    )
-    BasicText(
-      text = "Settings",
-      style = TextStyle.Default.copy(color = Color.Red),
-      modifier = Modifier.alpha(if (focused) 1.0f else 0.0f)
-    )
+    Canvas(
+      modifier = Modifier.matchParentSize()
+    ) {
+      drawRoundRect(
+        color = if (focused) Color(0xFFEE6CFF) else Color.White,
+        cornerRadius = CornerRadius(16f, 16f),
+        style = if (focused) Fill else Stroke(width = 2f)
+      )
+    }
+    Row(
+      verticalAlignment = Alignment.CenterVertically,
+      modifier = Modifier.padding(8.dp)
+    ) {
+      Image(
+        painter = painterResource(id = R.drawable.ic_outline_settings_24),
+        contentDescription = "Settings",
+        colorFilter = ColorFilter.tint(Color.White)
+      )
+      if (focused) {
+        BasicText(
+          text = "Settings",
+          style = TextStyle.Default.copy(color = Color.White),
+          modifier = Modifier.padding(start = 8.dp)
+        )
+      }
+    }
   }
 }
 
@@ -107,13 +123,8 @@ fun Home(
     headerItem = {
       item {
         Row(
-          modifier = it
-            .fillMaxWidth()
-            .padding(vertical = 16.dp)
+          modifier = it.fillMaxWidth()
         ) {
-          GearSettings(
-            onClick = { settingsLauncher.launch() }
-          )
           Spacer(
             modifier = Modifier.weight(1.0f)
           )
@@ -123,6 +134,9 @@ fun Home(
               update = it,
             )
           }
+          GearSettings(
+            onClick = { settingsLauncher.launch() }
+          )
         }
       }
     }

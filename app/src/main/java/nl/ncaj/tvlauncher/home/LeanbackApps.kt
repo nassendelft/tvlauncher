@@ -2,6 +2,7 @@ package nl.ncaj.tvlauncher.home
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.toArgb
 import androidx.palette.graphics.Palette
 
 data class LeanbackCategory(
@@ -16,5 +17,5 @@ data class LeanbackApp(
   val isGame: Boolean,
   val palette: Palette
 ) {
-  val strokeColor = Color(palette.getLightVibrantColor(palette.getVibrantColor(0)))
+  val strokeColor = Color(palette.getLightVibrantColor(palette.getVibrantColor(Color.White.toArgb())))
 }

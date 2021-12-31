@@ -17,7 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusOrder
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -39,8 +39,9 @@ fun LeanbackAppGrid(
     categories
   ),
   headerItem: LazyListScope.(Modifier) -> Unit = {},
-  footerItem: LazyListScope.() -> Unit = {}
+  footerItem: LazyListScope.(Modifier) -> Unit = {}
 ) {
+  val headerFocusRequester = remember { FocusRequester() }
   val scope = rememberCoroutineScope()
   var lastKeyEvent by remember { mutableStateOf(0L) }
 
@@ -50,7 +51,7 @@ fun LeanbackAppGrid(
 
   LazyColumn(
     verticalArrangement = Arrangement.spacedBy(state.itemSpacing),
-    contentPadding = PaddingValues(state.itemSpacing),
+    contentPadding = PaddingValues(40.dp),
     state = state.lazyListState,
     modifier = modifier
       .onPreviewKeyEvent {
@@ -69,6 +70,8 @@ fun LeanbackAppGrid(
   ) {
     headerItem(Modifier.onFocusChanged {
       if (it.hasFocus) scope.launch { state.lazyListState.animateScrollToItem(0) }
+    }.focusOrder(headerFocusRequester) {
+      up = headerFocusRequester
     })
     for ((categoryIndex, category) in categories.withIndex()) {
       leanbackAppCategoryItem(
@@ -78,7 +81,7 @@ fun LeanbackAppGrid(
         categoryIndex = categoryIndex,
       )
     }
-    footerItem()
+    footerItem(Modifier)
   }
 }
 
@@ -131,12 +134,12 @@ private fun LeanbackAppRow(
     modifier = modifier
   ) {
     val cellWidth = remember {
-      (maxWidth - (state.itemSpacing * (state.columns + 1))) / state.columns
+      (maxWidth - (state.itemSpacing * (state.columns - 1))) / state.columns
     }
     val cellHeight = remember { cellWidth * state.itemRatio }
     Row(
       horizontalArrangement = Arrangement.spacedBy(state.itemSpacing),
-      modifier = modifier
+      modifier = modifier.fillMaxWidth()
     ) {
       for ((columnIndex, item) in rowItems.withIndex()) {
         LeanbackAppItem(

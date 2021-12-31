@@ -17,8 +17,8 @@ import kotlin.math.ceil
 fun rememberLeanbackAppState(
   lazyListState: LazyListState,
   categories: List<LeanbackCategory>,
-  rowSpacing: Dp = 20.dp,
-  columns: Int = 5,
+  rowSpacing: Dp = 6.dp,
+  columns: Int = 7,
   itemRatio: Float = 0.5625f,
 ) = with(LocalDensity.current) {
   remember {

@@ -1,16 +1,15 @@
 package nl.ncaj.tvlauncher.home
 
-import android.graphics.Bitmap
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.palette.graphics.Palette
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.launch
 import nl.ncaj.tvlauncher.FetchDataState
 import nl.ncaj.tvlauncher.updater.AppUpdate
 import nl.ncaj.tvlauncher.updater.InstallApkResultContract
@@ -30,16 +29,30 @@ class HomeViewModel @Inject constructor(
         name = loadLaunchLabel(),
         banner = BitmapPainter(banner.asImageBitmap()),
         packageName = packageName,
+        isGame = isGame,
         palette = Palette.from(banner).generate()
       )
     }
 
-  @Composable
-  fun getApps() =
-    produceState<FetchDataState<List<LeanbackApp>>>(FetchDataState.Fetching()) {
-      val launchApps = appResolver.getLeanbackLaunchApplications()
-      value = FetchDataState.Data(launchApps.map { it.asLeanbackApp })
+  var categories by mutableStateOf<FetchDataState<List<LeanbackCategory>>>(FetchDataState.Fetching())
+  private set
+
+  init {
+    viewModelScope.launch {
+      val launchApps = appResolver.getLeanbackLaunchApplications().map { it.asLeanbackApp }
+      val apps = LeanbackCategory(
+        label = "Apps",
+        apps = launchApps.filter { !it.isGame }
+      )
+      val games = launchApps.filter { it.isGame }.takeIf { it.isNotEmpty() }?.let {
+        LeanbackCategory(
+          label = "Games",
+          apps = it
+        )
+      }
+      categories = FetchDataState.Data(listOfNotNull(apps, games))
     }
+  }
 
   @Composable
   fun getAppUpdate() = appUpdater.update.collectAsState(null)

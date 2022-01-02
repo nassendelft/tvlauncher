@@ -27,6 +27,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import kotlinx.coroutines.launch
+import nl.ncaj.tvlauncher.Text
+import nl.ncaj.tvlauncher.Theme
 import nl.ncaj.tvlauncher.onUserInteraction
 
 @Composable
@@ -51,9 +53,10 @@ fun LeanbackAppGrid(
 
   LazyColumn(
     verticalArrangement = Arrangement.spacedBy(state.itemSpacing),
-    contentPadding = PaddingValues(40.dp),
+    contentPadding = PaddingValues(bottom = 40.dp),
     state = state.lazyListState,
     modifier = modifier
+      .fillMaxHeight()
       .onPreviewKeyEvent {
         if (it.type == KeyEventType.KeyDown
           && it.key == Key.DirectionUp || it.key == Key.DirectionDown
@@ -96,15 +99,12 @@ private fun LazyListScope.leanbackAppCategoryItem(
     items = category.apps.chunked(state.columns)
   ) { rowIndex, rowItems ->
     Column(
-      modifier = modifier
+      modifier = modifier.padding(horizontal = 40.dp)
     ) {
       if (rowIndex == 0) {
-        BasicText(
+        Text(
           text = category.label,
-          style = TextStyle.Default.copy(
-            color = Color.White,
-            fontSize = 16.sp
-          ),
+          style = Theme.typography.h6,
           modifier = Modifier.padding(bottom = state.itemSpacing)
         )
       }
@@ -162,6 +162,9 @@ private fun LeanbackAppRow(
             }
         )
       }
+      Spacer(
+        modifier = Modifier.width(40.dp)
+      )
     }
   }
 }

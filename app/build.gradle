@@ -67,8 +67,29 @@ dependencies {
   implementation 'com.squareup.okhttp3:okhttp:4.9.0'
 
   implementation 'net.swiftzer.semver:semver:1.1.2'
+
+  implementation 'io.coil-kt:coil-compose:1.4.0'
 }
 
 kapt {
   correctErrorTypes true
+}
+
+// Deploys to the system app directory on the device
+// This can used with an emulator that's started with -writable-system
+task deploy(dependsOn: 'assembleDebug') {
+  doLast {
+    exec {
+      commandLine android.adbExe, 'root'
+    }
+    exec {
+      commandLine android.adbExe, 'remount'
+    }
+    exec {
+      commandLine android.adbExe, 'push', "$buildDir/outputs/apk/debug/app-debug.apk", '/system/priv-app/MyLauncher/app.apk'
+    }
+    exec {
+      commandLine android.adbExe, 'shell', 'am', 'force-stop', 'nl.ncaj.tvlauncher'
+    }
+  }
 }

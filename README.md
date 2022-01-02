@@ -18,6 +18,7 @@ Here are the current features:
 - Home grid to start an application
 - Open system settings from home screen
 - Automatic app update and start the update installation from within the app
+- Continue watching from last watch video
 
 ### New features
 
@@ -27,23 +28,37 @@ to see what could be in the future.
 
 ## Installation
 
-Don't care about the technicalities and just want to install it?
-Use the [installer](https://github.com/nassendelft/tvlauncher-installer/releases) to download and
-install the latest version then setup your device for a custom launcher.
+Warning: The installation requires your device to be rooted!
+Follow the following steps to install the app:
 
-## Advanced installation
+```bash
+adb root
+adb remount
+adb push ./launcher-vx.x.x.apk /system/priv-app/CustomLauncher
+adb shell pm disable-user com.google.android.tvlauncher
+adb reboot
+```
 
-If you are familiar with, and know how to use, [ADB](https://developer.android.com/studio/command-line/adb)
-you can simply run these 3 steps to get you started:
+To uninstall you can just delete the file that we push and enable the default launcher again:
 
-1) Download the [latest release APK](https://github.com/nassendelft/tvlauncher/releases)
-2) Install the APK: `adb install launcher-vx.x.x.apk`
-3) Change the default launcher on your device
+```bash
+adb root
+adb remount
+adb shell rm -rf /system/priv-app/CustomLauncher
+adb shell pm enable com.google.android.tvlauncher
+adb reboot
+```
 
-Note: If your device doesn't support changing launchers you can disable the default one by calling
-`adb shell pm disable-user com.google.android.tvlauncher`.
-If you want to enable the default launcher again you can call
-`adb shell pm enable com.google.android.tvlauncher`.
+### What is root?
+
+Please read one of the following articles or check Google.
+- [Android Central](https://www.androidcentral.com/root)
+- [Wikipedia](https://en.wikipedia.org/wiki/Rooting_(Android))
+
+### Why do I need a rooted devices?
+
+Although we can create a custom launcher without root requirement it will be heavily stripped from
+functionality like 'channels', 'watch next', etc that are quite useful features for a launcher for a TV.
 
 # Contributing
 

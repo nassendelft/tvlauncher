@@ -86,10 +86,10 @@ class HomeViewModel @Inject constructor(
 
   fun getLatestWatched() = channels.getLatestContinueWatching()?.let {
     WatchNext(
-      it.title,
-      it.episodeTitle,
-      it.posterArtUri,
-      it.intentUri ?: error("Should not be null")
+      it.previewProgram.program.title,
+      it.previewProgram.program.episodeTitle,
+      it.previewProgram.program.posterArtUri,
+      it.previewProgram.intentUri ?: error("Should not be null")
     )
   }
 }

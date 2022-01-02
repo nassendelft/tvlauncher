@@ -1,5 +1,6 @@
 package nl.ncaj.tvlauncher.home
 
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.asImageBitmap
@@ -20,7 +21,8 @@ import javax.inject.Inject
 class HomeViewModel @Inject constructor(
   private val appResolver: ApplicationResolver,
   private val appUpdater: AppUpdate,
-  private val launcherContract: AppLauncherContract
+  private val launcherContract: AppLauncherContract,
+  private val channels: Channels
 ) : ViewModel() {
 
   private val ApplicationResolver.ResolvedApplication.asLeanbackApp
@@ -35,7 +37,7 @@ class HomeViewModel @Inject constructor(
     }
 
   var categories by mutableStateOf<FetchDataState<List<LeanbackCategory>>>(FetchDataState.Fetching())
-  private set
+    private set
 
   init {
     viewModelScope.launch {
@@ -75,4 +77,26 @@ class HomeViewModel @Inject constructor(
     rememberLauncherForActivityResult(SettingsLauncherContract) {
       // if the user returns from this activity we ignore the result
     }
+
+  @Composable
+  fun getUriLauncher(): UriLauncher =
+    rememberLauncherForActivityResult(UriLauncherContract) {
+      // if the user returns from this activity we ignore the result
+    }
+
+  fun getLatestWatched() = channels.getLatestContinueWatching()?.let {
+    WatchNext(
+      it.title,
+      it.episodeTitle,
+      it.posterArtUri,
+      it.intentUri ?: error("Should not be null")
+    )
+  }
 }
+
+data class WatchNext(
+  val title: String?,
+  val episode: String?,
+  val poster: Uri?,
+  val uri: Uri
+)

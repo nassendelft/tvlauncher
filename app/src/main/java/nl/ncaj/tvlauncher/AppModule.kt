@@ -1,9 +1,11 @@
 package nl.ncaj.tvlauncher
 
 import android.app.DownloadManager
+import android.content.ContentResolver
 import android.content.Context
 import android.content.pm.PackageManager
 import android.util.Log.DEBUG
+import androidx.core.content.ContentResolverCompat
 import androidx.core.content.getSystemService
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
@@ -43,6 +45,11 @@ object AppModule {
   fun provideWorkManager(
     @ApplicationContext context: Context
   ) = WorkManager.getInstance(context)
+
+  @Provides
+  fun provideContentResolver(
+    @ApplicationContext context: Context
+  ) = context.contentResolver
 
   @Provides
   @Singleton

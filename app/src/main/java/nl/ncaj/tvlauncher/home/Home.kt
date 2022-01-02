@@ -1,30 +1,27 @@
 package nl.ncaj.tvlauncher.home
 
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import nl.ncaj.tvlauncher.FetchDataState
+import coil.compose.rememberImagePainter
+import nl.ncaj.tvlauncher.*
 import nl.ncaj.tvlauncher.R
 import nl.ncaj.tvlauncher.home.AppLauncherContract.Companion.launch
-import nl.ncaj.tvlauncher.launch
-import nl.ncaj.tvlauncher.onUserInteraction
+import nl.ncaj.tvlauncher.home.UriLauncherContract.launch
 import nl.ncaj.tvlauncher.updater.AppUpdate
 
 
@@ -45,12 +42,9 @@ private fun UpdateBox(
         .onFocusChanged { updateFocused = it.isFocused }
         .focusable(true)
     ) {
-      BasicText(
+      Text(
         text = "New update is available!",
-        style = TextStyle.Default.copy(
-          color = Color.White,
-          fontSize = 16.sp
-        )
+        style = TextStyle.Default.copy(fontSize = 16.sp)
       )
     }
     Canvas(
@@ -71,22 +65,10 @@ private fun GearSettings(
 ) {
   var focused by remember { mutableStateOf(false) }
 
-  Box(
-    modifier = modifier
-      .onUserInteraction { onClick() }
-      .onFocusChanged { focused = it.isFocused }
-      .focusable(true)
-      .animateContentSize(tween())
+  Button(
+    onClick = onClick,
+    modifier = modifier.onFocusChanged { focused = it.isFocused }
   ) {
-    Canvas(
-      modifier = Modifier.matchParentSize()
-    ) {
-      drawRoundRect(
-        color = if (focused) Color(0xFFEE6CFF) else Color.White,
-        cornerRadius = CornerRadius(16f, 16f),
-        style = if (focused) Fill else Stroke(width = 2f)
-      )
-    }
     Row(
       verticalAlignment = Alignment.CenterVertically,
       modifier = Modifier.padding(8.dp)
@@ -97,9 +79,8 @@ private fun GearSettings(
         colorFilter = ColorFilter.tint(Color.White)
       )
       if (focused) {
-        BasicText(
+        Text(
           text = "Settings",
-          style = TextStyle.Default.copy(color = Color.White),
           modifier = Modifier.padding(start = 8.dp)
         )
       }
@@ -112,33 +93,105 @@ fun Home(
   viewModel: HomeViewModel
 ) {
   val appLauncher = viewModel.getAppLauncher()
-  val installLauncher = viewModel.getUpdateInstallLauncher()
-  val settingsLauncher = viewModel.getSettingLauncher()
-  val update by viewModel.getAppUpdate()
   val categories = (viewModel.categories as? FetchDataState.Data)?.value ?: emptyList()
 
   LeanbackAppGrid(
     categories = categories,
     openApplication = { app -> appLauncher.launch(app.packageName) },
-    headerItem = {
-      item {
-        Row(
-          modifier = it.fillMaxWidth()
-        ) {
-          Spacer(
-            modifier = Modifier.weight(1.0f)
-          )
-          update?.let {
-            UpdateBox(
-              onClick = { update -> installLauncher.launch(update.fileUri) },
-              update = it,
-            )
-          }
-          GearSettings(
-            onClick = { settingsLauncher.launch() }
-          )
-        }
-      }
+    headerItem = { modifier ->
+      item { Header(viewModel, viewModel.getLatestWatched(), modifier) }
     }
   )
+}
+
+@Composable
+private fun Header(
+  viewModel: HomeViewModel,
+  latestWatched: WatchNext?,
+  modifier: Modifier = Modifier,
+) {
+  val installLauncher = viewModel.getUpdateInstallLauncher()
+  val settingsLauncher = viewModel.getSettingLauncher()
+  val appLauncher = viewModel.getAppLauncher()
+  val uriLauncher = viewModel.getUriLauncher()
+  val update by viewModel.getAppUpdate()
+  val brush = remember { Brush.verticalGradient(listOf(Color(0x00303030), Color(0xFF303030))) }
+
+  val imagePainter = latestWatched?.let { rememberImagePainter(it.poster) }
+    ?: painterResource(id = R.drawable.header_fallback)
+
+  Box(
+    modifier = modifier
+      .fillMaxWidth()
+      .height(300.dp)
+  ) {
+    Box(
+      modifier = Modifier.matchParentSize()
+    ) {
+      Image(
+        painter = imagePainter,
+        contentDescription = "Show to watch next",
+        contentScale = ContentScale.Crop,
+        modifier = Modifier.fillMaxWidth()
+      )
+      Canvas(
+        modifier = Modifier.fillMaxSize()
+      ) {
+        drawRect(brush)
+      }
+      latestWatched?.let {
+        WatchNext(
+          next = it,
+          onWatch = { show -> uriLauncher.launch(show.uri) },
+          modifier = Modifier.align(Alignment.CenterStart).padding(start = 20.dp)
+        )
+      }
+    }
+    Row(
+      modifier = Modifier.padding(40.dp)
+    ) {
+      Spacer(
+        modifier = Modifier.weight(1.0f)
+      )
+      update?.let {
+        UpdateBox(
+          onClick = { update -> installLauncher.launch(update.fileUri) },
+          update = it,
+        )
+      }
+      GearSettings(
+        onClick = { settingsLauncher.launch() }
+      )
+    }
+  }
+}
+
+@Composable
+fun WatchNext(
+  next: WatchNext,
+  onWatch: (WatchNext) -> Unit,
+  modifier: Modifier = Modifier
+) {
+  Column(
+    modifier = modifier
+  ) {
+    Text(
+      text = next.title ?: "",
+      style = Theme.typography.h1
+    )
+    next.episode?.let {
+      Text(
+        text = next.episode
+      )
+    }
+    Button(
+      onClick = { onWatch(next) },
+      modifier = Modifier.padding(top = 32.dp)
+    ) {
+      Text(
+        text = "Continue watching",
+        modifier = Modifier.padding(8.dp)
+      )
+    }
+  }
 }

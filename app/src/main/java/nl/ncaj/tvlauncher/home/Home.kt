@@ -94,12 +94,13 @@ fun Home(
 ) {
   val appLauncher = viewModel.getAppLauncher()
   val categories = (viewModel.categories as? FetchDataState.Data)?.value ?: emptyList()
+  val watchNext by viewModel.latestWatched.collectAsState(initial = null)
 
   LeanbackAppGrid(
     categories = categories,
     openApplication = { app -> appLauncher.launch(app.packageName) },
     headerItem = { modifier ->
-      item { Header(viewModel, viewModel.getLatestWatched(), modifier) }
+      item { Header(viewModel, watchNext, modifier) }
     }
   )
 }
@@ -143,7 +144,9 @@ private fun Header(
         WatchNext(
           next = it,
           onWatch = { show -> uriLauncher.launch(show.uri) },
-          modifier = Modifier.align(Alignment.CenterStart).padding(start = 20.dp)
+          modifier = Modifier
+            .align(Alignment.CenterStart)
+            .padding(start = 20.dp)
         )
       }
     }

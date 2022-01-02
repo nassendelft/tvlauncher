@@ -10,6 +10,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.palette.graphics.Palette
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import nl.ncaj.tvlauncher.FetchDataState
 import nl.ncaj.tvlauncher.updater.AppUpdate
@@ -22,7 +26,7 @@ class HomeViewModel @Inject constructor(
   private val appResolver: ApplicationResolver,
   private val appUpdater: AppUpdate,
   private val launcherContract: AppLauncherContract,
-  private val channels: Channels
+  channels: Channels
 ) : ViewModel() {
 
   private val ApplicationResolver.ResolvedApplication.asLeanbackApp
@@ -38,6 +42,16 @@ class HomeViewModel @Inject constructor(
 
   var categories by mutableStateOf<FetchDataState<List<LeanbackCategory>>>(FetchDataState.Fetching())
     private set
+
+  val latestWatched = channels.getLatestContinueWatching()
+    .map { nextProgram ->
+      WatchNext(
+        nextProgram.previewProgram.program.title,
+        nextProgram.previewProgram.program.episodeTitle,
+        nextProgram.previewProgram.program.posterArtUri,
+        nextProgram.previewProgram.intentUri ?: error("Should not be null")
+      )
+    }
 
   init {
     viewModelScope.launch {
@@ -83,15 +97,6 @@ class HomeViewModel @Inject constructor(
     rememberLauncherForActivityResult(UriLauncherContract) {
       // if the user returns from this activity we ignore the result
     }
-
-  fun getLatestWatched() = channels.getLatestContinueWatching()?.let {
-    WatchNext(
-      it.previewProgram.program.title,
-      it.previewProgram.program.episodeTitle,
-      it.previewProgram.program.posterArtUri,
-      it.previewProgram.intentUri ?: error("Should not be null")
-    )
-  }
 }
 
 data class WatchNext(

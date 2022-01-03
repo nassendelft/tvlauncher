@@ -131,7 +131,6 @@ private fun Header(
   val brush = remember { Brush.verticalGradient(listOf(Color(0x00303030), Color(0xFF303030))) }
 
   val imagePainter = latestWatched?.let { rememberImagePainter(it.poster) }
-    ?: painterResource(id = R.drawable.header_fallback)
 
   Box(
     modifier = modifier
@@ -141,12 +140,14 @@ private fun Header(
     Box(
       modifier = Modifier.matchParentSize()
     ) {
-      Image(
-        painter = imagePainter,
-        contentDescription = "Show to watch next",
-        contentScale = ContentScale.Crop,
-        modifier = Modifier.fillMaxWidth()
-      )
+      imagePainter?.let {
+        Image(
+          painter = imagePainter,
+          contentDescription = "Show to watch next",
+          contentScale = ContentScale.Crop,
+          modifier = Modifier.fillMaxWidth()
+        )
+      }
       Canvas(
         modifier = Modifier.fillMaxSize()
       ) {

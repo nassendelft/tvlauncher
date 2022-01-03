@@ -46,7 +46,7 @@ class HomeViewModel @Inject constructor(
         }
       )
     }
-    .launchStateIn(viewModelScope, emptyList())
+    .launchStateIn(viewModelScope, listOf(LeanbackCategory("Apps", emptyList())))
 
   val appUpdate = appUpdater.update
 

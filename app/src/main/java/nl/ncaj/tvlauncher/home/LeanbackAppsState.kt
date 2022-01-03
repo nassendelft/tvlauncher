@@ -21,7 +21,7 @@ fun rememberLeanbackAppState(
   columns: Int = 7,
   itemRatio: Float = 0.5625f,
 ) = with(LocalDensity.current) {
-  remember {
+  remember(categories) {
     LeanbackAppsState(
       rowSpacing.toPx(),
       lazyListState,

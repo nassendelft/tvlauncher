@@ -1,5 +1,6 @@
 package nl.ncaj.tvlauncher.home
 
+import android.net.Uri
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.focusable
@@ -93,29 +94,40 @@ fun Home(
   viewModel: HomeViewModel
 ) {
   val appLauncher = viewModel.getAppLauncher()
-  val categories = (viewModel.categories as? FetchDataState.Data)?.value ?: emptyList()
+  val installLauncher = viewModel.getUpdateInstallLauncher()
+  val settingsLauncher = viewModel.getSettingLauncher()
+  val uriLauncher = viewModel.getUriLauncher()
+  val update by viewModel.appUpdate.collectAsState(initial = null)
+  val categories by viewModel.categories.collectAsState(initial = emptyList())
   val watchNext by viewModel.latestWatched.collectAsState(initial = null)
 
   LeanbackAppGrid(
     categories = categories,
     openApplication = { app -> appLauncher.launch(app.packageName) },
     headerItem = { modifier ->
-      item { Header(viewModel, watchNext, modifier) }
+      item {
+        Header(
+          latestWatched = watchNext,
+          appUpdate = update,
+          modifier = modifier,
+          onWatch = { uriLauncher.launch(it) },
+          onOpenSettings = { settingsLauncher.launch() },
+          onInstallUpdate = { installLauncher.launch(it) }
+        )
+      }
     }
   )
 }
 
 @Composable
 private fun Header(
-  viewModel: HomeViewModel,
   latestWatched: WatchNext?,
+  onWatch: (Uri) -> Unit,
+  onOpenSettings: () -> Unit,
+  onInstallUpdate: (Uri) -> Unit,
+  appUpdate: AppUpdate.Update?,
   modifier: Modifier = Modifier,
 ) {
-  val installLauncher = viewModel.getUpdateInstallLauncher()
-  val settingsLauncher = viewModel.getSettingLauncher()
-  val appLauncher = viewModel.getAppLauncher()
-  val uriLauncher = viewModel.getUriLauncher()
-  val update by viewModel.getAppUpdate()
   val brush = remember { Brush.verticalGradient(listOf(Color(0x00303030), Color(0xFF303030))) }
 
   val imagePainter = latestWatched?.let { rememberImagePainter(it.poster) }
@@ -143,7 +155,7 @@ private fun Header(
       latestWatched?.let {
         WatchNext(
           next = it,
-          onWatch = { show -> uriLauncher.launch(show.uri) },
+          onWatch = { show -> onWatch(show.uri) },
           modifier = Modifier
             .align(Alignment.CenterStart)
             .padding(start = 20.dp)
@@ -156,14 +168,14 @@ private fun Header(
       Spacer(
         modifier = Modifier.weight(1.0f)
       )
-      update?.let {
+      appUpdate?.let {
         UpdateBox(
-          onClick = { update -> installLauncher.launch(update.fileUri) },
+          onClick = { update -> onInstallUpdate(update.fileUri) },
           update = it,
         )
       }
       GearSettings(
-        onClick = { settingsLauncher.launch() }
+        onClick = onOpenSettings
       )
     }
   }

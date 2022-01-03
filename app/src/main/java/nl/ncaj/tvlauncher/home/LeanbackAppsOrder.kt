@@ -11,6 +11,8 @@ fun Modifier.leanbackAppsFocusOrder(
   rowIndex: Int,
   columnIndex: Int,
 ): Modifier {
+  if (state.focusRequesters.isEmpty()) return Modifier
+
   val mapper = state.indexMapper
   val index = mapper.getAbsoluteIndex(rowIndex, columnIndex)
   val currentCategory = state.focusRequesters[categoryIndex]

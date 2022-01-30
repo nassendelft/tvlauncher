@@ -12,7 +12,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
@@ -22,9 +21,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.key.*
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import kotlinx.coroutines.launch
 import nl.ncaj.tvlauncher.Text
@@ -48,8 +45,10 @@ fun LeanbackAppGrid(
   var lastKeyEvent by remember { mutableStateOf(0L) }
 
   // focusRequest is needed to give initial focus
-  // to first item on composition
-  LaunchedEffect(Unit) { state.focusRequesters.firstOrNull()?.firstOrNull()?.requestFocus() }
+  // to first item every time categories change
+  LaunchedEffect(categories) {
+    state.focusRequesters.firstOrNull()?.firstOrNull()?.requestFocus()
+  }
 
   LazyColumn(
     verticalArrangement = Arrangement.spacedBy(state.itemSpacing),
@@ -71,11 +70,14 @@ fun LeanbackAppGrid(
         return@onPreviewKeyEvent false
       }
   ) {
-    headerItem(Modifier.onFocusChanged {
-      if (it.hasFocus) scope.launch { state.lazyListState.animateScrollToItem(0) }
-    }.focusOrder(headerFocusRequester) {
-      up = headerFocusRequester
-    })
+    headerItem(
+      Modifier
+        .onFocusChanged {
+          if (it.hasFocus) scope.launch { state.lazyListState.animateScrollToItem(0) }
+        }
+        .focusOrder(headerFocusRequester) {
+          up = headerFocusRequester
+        })
     for ((categoryIndex, category) in categories.withIndex()) {
       leanbackAppCategoryItem(
         category = category,

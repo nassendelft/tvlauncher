@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 
 @Composable
@@ -28,8 +29,11 @@ fun Button(
     modifier = modifier
       .onUserInteraction { onClick() }
       .onFocusChanged { focused = it.isFocused }
-      .focusable(true)
+      .focusable()
   ) {
+    // uses Canvas instead of border and background modifier here
+    // because it looks like there's a bug somewhere in compose that crashes the app
+    // as of androidx.compose.ui:ui:1.0.5
     Canvas(
       modifier = Modifier.matchParentSize()
     ) {
@@ -48,12 +52,18 @@ fun Text(
   text: String,
   modifier: Modifier = Modifier,
   color: Color = Color.White,
-  style: TextStyle = Theme.typography.body
+  style: TextStyle = Theme.typography.body,
+  overflow: TextOverflow = TextOverflow.Clip,
+  softWrap: Boolean = true,
+  maxLines: Int = Int.MAX_VALUE,
 ) {
   BasicText(
     text = text,
     style = style.copy(color = color),
-    modifier = modifier
+    modifier = modifier,
+    overflow = overflow,
+    softWrap = softWrap,
+    maxLines = maxLines
   )
 }
 
@@ -65,6 +75,9 @@ data class Theme(
     val h1: TextStyle = TextStyle(
       fontSize = 28.sp
     ),
+    val h3: TextStyle = TextStyle(
+      fontSize = 22.sp
+    ),
     val h6: TextStyle = TextStyle(
       fontSize = 16.sp
     ),
@@ -72,6 +85,7 @@ data class Theme(
       fontSize = 16.sp
     )
   )
+
   companion object {
     private val instance = Theme()
     val typography = instance.typography

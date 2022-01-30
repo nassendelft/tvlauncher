@@ -2,11 +2,9 @@ package nl.ncaj.tvlauncher.home
 
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContract
-import javax.inject.Inject
 
 /**
  * Contract to start open the given URI.

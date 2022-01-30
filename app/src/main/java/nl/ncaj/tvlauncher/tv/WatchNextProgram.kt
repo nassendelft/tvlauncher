@@ -3,7 +3,6 @@ package nl.ncaj.tvlauncher.tv
 import android.content.ContentValues
 import android.database.Cursor
 import android.media.tv.TvContract
-import java.util.*
 
 /**
  * A convenience class to access [TvContract.WatchNextPrograms]

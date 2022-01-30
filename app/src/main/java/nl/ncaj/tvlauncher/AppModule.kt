@@ -1,11 +1,11 @@
 package nl.ncaj.tvlauncher
 
+import android.app.ActivityManager
 import android.app.DownloadManager
-import android.content.ContentResolver
+import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.util.Log.DEBUG
-import androidx.core.content.ContentResolverCompat
 import androidx.core.content.getSystemService
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
@@ -59,4 +59,10 @@ object AppModule {
   @Singleton
   fun provideJson() = Json { ignoreUnknownKeys = true }
 
+  @Provides
+  @Singleton
+  fun provideActivityManager(
+    @ApplicationContext context: Context
+  ) : ActivityManager = context.getSystemService()
+    ?: error("Could not find instance of ActivityManager")
 }

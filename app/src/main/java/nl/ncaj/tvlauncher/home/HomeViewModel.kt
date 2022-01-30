@@ -10,7 +10,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.palette.graphics.Palette
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import nl.ncaj.tvlauncher.ApplicationResolver
 import nl.ncaj.tvlauncher.coroutine.launchStateIn
 import nl.ncaj.tvlauncher.updater.AppUpdate
 import nl.ncaj.tvlauncher.updater.InstallApkResultContract
@@ -34,16 +36,18 @@ class HomeViewModel @Inject constructor(
         nextProgram.previewProgram.intentUri ?: error("Should not be null")
       )
     }
+    .distinctUntilChanged()
     .launchStateIn(viewModelScope, null)
 
   val categories = appResolver.getLeanbackLaunchApplications()
     .map { it.map { app -> app.asLeanbackApp } }
+    .distinctUntilChanged()
     .map { launchApps ->
       listOfNotNull(
         LeanbackCategory(label = "Apps", apps = launchApps.filter { !it.isGame }),
-        launchApps.filter { it.isGame }.takeIf { it.isNotEmpty() }?.let {
-          LeanbackCategory(label = "Games", apps = it)
-        }
+        launchApps.filter { it.isGame }
+          .takeIf { it.isNotEmpty() }
+          ?.let { LeanbackCategory(label = "Games", apps = it) }
       )
     }
     .launchStateIn(viewModelScope, listOf(LeanbackCategory("Apps", emptyList())))
@@ -76,13 +80,13 @@ class HomeViewModel @Inject constructor(
     }
 }
 
-private val ApplicationResolver.ResolvedApplication.asLeanbackApp
+private val ApplicationResolver.ResolvedApplicationActivity.asLeanbackApp
   get() = (loadBanner() ?: error("Banner required for leanback app")).toBitmap().let { banner ->
     LeanbackApp(
-      name = loadLaunchLabel(),
+      name = loadLabel(),
       banner = BitmapPainter(banner.asImageBitmap()),
       packageName = packageName,
-      isGame = isGame,
+      isGame = resolvedApplication.isGame,
       palette = Palette.from(banner).generate()
     )
   }

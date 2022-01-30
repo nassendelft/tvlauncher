@@ -2,12 +2,10 @@ package nl.ncaj.tvlauncher.quick
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.focusable
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,11 +17,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import nl.ncaj.tvlauncher.Button
 import nl.ncaj.tvlauncher.R
 import nl.ncaj.tvlauncher.Text
 import nl.ncaj.tvlauncher.Theme
-import nl.ncaj.tvlauncher.onUserInteraction
 
 @Composable
 fun RunningApps(
@@ -96,9 +92,8 @@ private fun RunningAppItem(
 
   Row(
     modifier = modifier
-      .onUserInteraction { onForceCloseApp(app) }
       .onFocusChanged { focused = it.isFocused }
-      .focusable()
+      .clickable { onForceCloseApp(app) }
       .padding(16.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {

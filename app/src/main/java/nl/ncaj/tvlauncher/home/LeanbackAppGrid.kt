@@ -4,9 +4,9 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.focusable
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -19,14 +19,12 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusOrder
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import kotlinx.coroutines.launch
 import nl.ncaj.tvlauncher.Text
 import nl.ncaj.tvlauncher.Theme
-import nl.ncaj.tvlauncher.onUserInteraction
 
 @Composable
 fun LeanbackAppGrid(
@@ -77,7 +75,8 @@ fun LeanbackAppGrid(
         }
         .focusOrder(headerFocusRequester) {
           up = headerFocusRequester
-        })
+        }
+    )
     for ((categoryIndex, category) in categories.withIndex()) {
       leanbackAppCategoryItem(
         category = category,
@@ -186,11 +185,10 @@ private fun LeanbackAppItem(
 
   Box(
     modifier = modifier
+      .onFocusChanged { focused = it.isFocused }
+      .clickable { onClick(app) }
       .then(if (focused) Modifier.zIndex(1f) else Modifier)
       .scale(scale)
-      .onFocusChanged { focused = it.isFocused }
-      .focusable()
-      .onUserInteraction { onClick(app) }
   ) {
     if (focused) {
       OuterGlow(
@@ -214,14 +212,10 @@ private fun LeanbackAppItem(
         enter = fadeIn(),
         exit = fadeOut(),
       ) {
-        Canvas(
+        Box(
           modifier = Modifier.fillMaxSize()
-        ) {
-          drawRect(
-            color = app.strokeColor,
-            style = Stroke(4.0f)
-          )
-        }
+            .border(width = 2.dp, color = app.strokeColor)
+        )
       }
     }
   }

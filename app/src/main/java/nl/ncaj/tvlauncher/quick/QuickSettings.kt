@@ -1,9 +1,6 @@
 package nl.ncaj.tvlauncher.quick
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.focusable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -21,11 +18,9 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
-import androidx.navigation.compose.composable
 import androidx.navigation.compose.dialog
 import androidx.navigation.compose.navigation
 import nl.ncaj.tvlauncher.Text
-import nl.ncaj.tvlauncher.onUserInteraction
 
 fun NavGraphBuilder.quickSettingsNavigation(
   route: String,
@@ -47,7 +42,7 @@ fun NavGraphBuilder.quickSettingsNavigation(
       )
     }
     dialog(
-      route = "runningApps",
+      route = "running-apps",
       dialogProperties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
       val viewModel = hiltViewModel<RunningAppsViewModel>()
@@ -62,7 +57,7 @@ fun NavGraphBuilder.quickSettingsNavigation(
 }
 
 private val QuickSetting.asNavRoute get() = when (this) {
-  QuickSetting.RunningApps -> "runningApps"
+  QuickSetting.RunningApps -> "running-apps"
 }
 
 @Composable
@@ -103,7 +98,7 @@ private fun QuickSettingsGrid(
         for (quickSetting in it) {
           QuickSettingsGridItem(
             setting = quickSetting,
-            modifier.onUserInteraction { onSettingSelected(quickSetting) }
+            onSettingSelected = onSettingSelected
           )
         }
       }
@@ -114,16 +109,15 @@ private fun QuickSettingsGrid(
 @Composable
 private fun QuickSettingsGridItem(
   setting: QuickSetting,
+  onSettingSelected: (QuickSetting) -> Unit,
   modifier: Modifier = Modifier
 ) {
-  val focusRequester = remember { FocusRequester() }
   var focused by remember { mutableStateOf(false) }
 
   Column(
     modifier = modifier
-      .focusRequester(focusRequester)
       .onFocusChanged { focused = it.isFocused }
-      .focusable()
+      .clickable { onSettingSelected(setting) }
       .then(if (focused) Modifier.border(width = 1.dp, color = Color.Red) else Modifier)
       .padding(16.dp),
     horizontalAlignment = Alignment.CenterHorizontally

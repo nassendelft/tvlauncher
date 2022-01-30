@@ -3,6 +3,7 @@ package nl.ncaj.tvlauncher.home
 import android.net.Uri
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
@@ -35,13 +36,12 @@ private fun UpdateBox(
   var updateFocused by remember { mutableStateOf(false) }
 
   Box(
-    modifier = modifier.onUserInteraction { onClick(update) },
+    modifier = modifier
+      .onFocusChanged { updateFocused = it.isFocused }
+      .clickable { onClick(update) },
   ) {
     Column(
-      modifier = Modifier
-        .padding(20.dp)
-        .onFocusChanged { updateFocused = it.isFocused }
-        .focusable(true)
+      modifier = Modifier.padding(20.dp)
     ) {
       Text(
         text = "New update is available!",
